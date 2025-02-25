@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris Game</title>
+    <style>
+        body {
+            text-align: center;
+            background: #222;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            background: black;
+            display: block;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tetris</h1>
+    <canvas id="tetris" width="300" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById("tetris");
+        const ctx = canvas.getContext("2d");
+        const ROWS = 20;
+        const COLUMNS = 10;
+        const BLOCK_SIZE = 30;
+        const COLORS = [null, "cyan", "blue", "orange", "yellow", "green", "purple", "red"];
+        
+        function createMatrix(rows, cols) {
+            return Array.from({ length: rows }, () => Array(cols).fill(0));
+        }
+        
+        let board = createMatrix(ROWS, COLUMNS);
+        
+        const TETROMINOES = [
+            [[1, 1, 1, 1]],
+            [[0, 2, 0], [2, 2, 2]],
+            [[3, 3], [3, 3]],
+            [[0, 4, 4], [4, 4, 0]],
+            [[5, 5, 0], [0, 5, 5]],
+            [[6, 6, 6], [0, 6, 0]],
+            [[7, 7, 7], [7, 0, 0]]
+        ];
+        
+        function drawBoard() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            board.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value) {
+                        ctx.fillStyle = COLORS[value];
+                        ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                        ctx.strokeStyle = "white";
+                        ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                });
+            });
+        }
+        
+        function drawPiece(piece, offset) {
+            piece.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value) {
+                        ctx.fillStyle = COLORS[value];
+                        ctx.fillRect((x + offset.x) * BLOCK_SIZE, (y + offset.y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                        ctx.strokeStyle = "white";
+                        ctx.strokeRect((x + offset.x) * BLOCK_SIZE, (y + offset.y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                });
+            });
+        }
+        
+        function collide(board, piece, offset) {
+            return piece.some((row, y) => {
+                return row.some((value, x) => {
+                    return value && (board[y + offset.y] && board[y + offset.y][x + offset.x]) !== 0;
+                });
+            });
+        }
+        
+        function merge(board, piece, offset) {
+            piece.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value) {
+                        board[y + offset.y][x + offset.x] = value;
+                    }
+                });
+            });
+        }
+        
+        function rotate(matrix) {
+            return matrix[0].map((_, i) => matrix.map(row => row[i])).reverse();
+        }
+        
+        let currentPiece = TETROMINOES[Math.floor(Math.random() * TETROMINOES.length)];
+        let piecePosition = { x: 3, y: 0 };
+        
+        function drop() {
+            piecePosition.y++;
+            if (collide(board, currentPiece, piecePosition)) {
+                piecePosition.y--;
+                merge(board, currentPiece, piecePosition);
+                currentPiece = TETROMINOES[Math.floor(Math.random() * TETROMINOES.length)];
+                piecePosition = { x: 3, y: 0 };
+            }
+        }
+        
+        function update() {
+            drawBoard();
+            drawPiece(currentPiece, piecePosition);
+            requestAnimationFrame(update);
+        }
+        
+        document.addEventListener("keydown", event => {
+            if (event.key === "ArrowLeft") {
+                piecePosition.x--;
+                if (collide(board, currentPiece, piecePosition)) {
+                    piecePosition.x++;
+                }
+            } else if (event.key === "ArrowRight") {
+                piecePosition.x++;
+                if (collide(board, currentPiece, piecePosition)) {
+                    piecePosition.x--;
+                }
+            } else if (event.key === "ArrowDown") {
+                drop();
+            } else if (event.key === "ArrowUp") {
+                let rotated = rotate(currentPiece);
+                if (!collide(board, rotated, piecePosition)) {
+                    currentPiece = rotated;
+                }
+            }
+        });
+        
+        setInterval(drop, 1000);
+        update();
+    </script>
+</body>
+</html>
